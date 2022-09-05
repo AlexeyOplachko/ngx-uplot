@@ -1,16 +1,10 @@
 import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { NgxUplotComponent } from './ngx-uplot.component';
 
-
-
 @NgModule({
-  declarations: [
-    NgxUplotComponent
-  ],
-  imports: [
-  ],
-  exports: [
-    NgxUplotComponent
-  ]
+    imports: [CommonModule],
+    declarations: [NgxUplotComponent],
+    exports: [NgxUplotComponent],
 })
-export class NgxUplotModule { }
+export class NgxUplotModule {}

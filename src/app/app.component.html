@@ -1,0 +1,16 @@
+<div>
+    <span> Chart type: </span>
+    <button (click)="type = 'bar'">bar</button>
+    <button (click)="type = 'line'">line</button>
+    <button (click)="type = 'stepped'">stepped</button>
+    <button (click)="type = 'spline'">spline</button>
+    <button (click)="type = 'points'">points</button>
+</div>
+<div>
+    <button (click)="legend = !legend">Toggle legend</button>
+</div>
+<div>
+    <button (click)="toggleCursor()">Toggle cursor</button>
+    <button (click)="toggleCrosshairs()">Toggle crosshair</button>
+</div>
+<ngx-uplot style="position: relative" [cursor]="cursor" [legend]="legend" [type]="type" [data]="data"></ngx-uplot>

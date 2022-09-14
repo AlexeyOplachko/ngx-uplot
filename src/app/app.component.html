@@ -13,4 +13,9 @@
     <button (click)="toggleCursor()">Toggle cursor</button>
     <button (click)="toggleCrosshairs()">Toggle crosshair</button>
 </div>
-<ngx-uplot style="position: relative" [cursor]="cursor" [legend]="legend" [type]="type" [data]="data"></ngx-uplot>
+<div>
+    <button (click)="randomizeScale()">
+        Randomize scale
+    </button>
+</div>
+<ngx-uplot style="position: relative" [cursor]="cursor" [legend]="legend" [type]="type" [data]="data" [limits]="scale"></ngx-uplot>

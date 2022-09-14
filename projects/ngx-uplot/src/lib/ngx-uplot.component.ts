@@ -8,7 +8,7 @@ import {
     ViewEncapsulation,
 } from '@angular/core';
 import * as _uPlot from 'uplot';
-import { ChartType } from './models/chart.model';
+import { ChartType, Details, Limits } from './models/chart.model';
 
 const uPlot: any = (_uPlot as any)?.default;
 
@@ -29,46 +29,69 @@ const uPlot: any = (_uPlot as any)?.default;
 export class NgxUplotComponent implements AfterViewInit {
     chartData: any;
     uPlotChart: any;
-    options: _uPlot.Options = {
+    _options: _uPlot.Options = {
         class: 'my-chart',
         width: 0,
-        height: 0,
-        scales: {
-            x: {
-                time: false,
-            },
-        },
+        height: 0,  
+        axes: [
+            {
+            incrs: [60],
+            // use static template for every tick
+            values: '{H}:{m}:{ss}',
+            // reduce axis height, since ticks values are now single line
+            size: 30,
+            ticks: {
+                    show: true,
+                    stroke: "#eee",
+                    width: 2,
+                    dash: [],
+                    size: 10,
+                }
+          },
+          
+        ],
+  
         focus: {
             alpha: 0.9
-        },				
+        },	      
         cursor: {
             focus: {
                 prox: 3,
             },
-        },
+        },			
         series: [{}],
         legend: {
             show: false,
-            live: false,
+            live: true,
         },
     };
-    _details: any = [
+    @Input() set options(options: _uPlot.Options) {
+        this._options = options;
+    }
+    get options(): _uPlot.Options {
+        return this._options;
+    }
+    _dateFormat: string = '{H}:{m}:{ss}'
+    @Input() set dateFormat(val: string) {
+        this._dateFormat = val;
+        this.makeChart(this.data)
+    }
+    get dateFormat(): string {
+        return this._dateFormat
+    }
+    _data: any = [
         [1, 3, 2, 4],
         [2, 3, 4, 1],
         [3, 4, 1, 2],
         [4, 1, 2, 3],
     ];
-    _cursor: _uPlot.Cursor = {};
     @Input() customTooltip: boolean = false;
     @Output() showTooltip = new EventEmitter<any>();
     @Output() hideTooltip = new EventEmitter<void>();
+
+    _cursor: _uPlot.Cursor = {};
     @Input() set cursor(val: _uPlot.Cursor) {
         this._cursor = val;
-        if (this.options.cursor) {
-        this.options.cursor = Object.assign(this.options.cursor, val);
-        } else {
-            this.options.cursor = val;
-        }
         this.makeChart(this.data);
     }
     get cursor(): _uPlot.Cursor {
@@ -78,75 +101,71 @@ export class NgxUplotComponent implements AfterViewInit {
     _legend: boolean = false;
     @Input() set legend(val: boolean) {
         this._legend = val;
-        if (this.options.legend) {
-            this.options.legend.show = val;
-        }else {
-            this.options.legend = {show: val};
-        }
         this.makeChart(this.data);
     }
     get legend(): boolean {
         return this._legend;
     }
+    _limits: Limits = {}
+    @Input() set limits(val: Limits) {
+        this._limits = val;
+        this.makeChart(this.data)
+    }
+    get limits(): Limits {
+        return this._limits
+    }
     @Input() align: number | Array<number> = 0;
     _type: ChartType = 'line';
     @Input() set type(value: ChartType) {
         this._type = value;
-        this.options.series.forEach((series: any, index: number) => {
-            if (typeof value === 'string') {
-                series.paths = this.getTypeFunction(value);
-            } else {
-                series.paths = this.getTypeFunction(value[index], index);
-            }
-        });
         this.makeChart(this.data);
     }
     get type(): ChartType {
         return this._type;
     }
+    _strokeWidth: number = 1 / devicePixelRatio;
+    @Input() set strokeWidth(value: number) {
+        this._strokeWidth = value;
+        this.makeChart();
+    }
+    get strokeWidth(): number {
+        return this._strokeWidth;
+    }
     @Input()
-    set data(value: any) {
-        this._details = value?.data;
+    set data(value: Details) {
+        this._data = value?.data;
         try {
             const labels = value?.meta?.map((i: any) => i.name);
-            this._details = this._details?.map((d: any) => {
-                return Object.values(d);
-            });
-            const out: any[] = [];
-            for (let i = 0; i < this._details.length; i++) {
-                for (let j = 0; j < this._details[i].length; j++) {
-                    if (!out[j]) {
-                        out[j] = [];
-                    }
-                    const n = this._details[i][j];
-                    out[j].push(!isNaN(n) ? +n : null);
+
+            const series: Array<_uPlot.Series> = value.data.map((i, k) => {
+                if (k === 0) {
+                    return {}
                 }
-            }
-            const series: any = out.map((i, k) => ({
-                label: labels[k],
-                stroke: this.randColor(),
-                width: 1 / devicePixelRatio,
-                fill: 'rgba(0,255,0,0.1)',
-            }));
-            series[2].dash = [10, 5]
-            this.options.series = [{}, ...series];
+                const {fillColor, strokeColor, dash, show, strokeWidth } = value?.meta?.[k-1]
+                const randColor = this.randColor();
+                return {
+                    label: labels[k-1],
+                    stroke: strokeColor ? strokeColor : randColor,
+                    fill: fillColor ? fillColor : '',
+                    width: strokeWidth ? strokeWidth : this.strokeWidth,
+                    show: typeof value?.meta?.[k-1].show !== 'undefined' ? show : true,
+                    dash: dash ? dash : [0, 0],
+                };
+            });
+            this.options.series = series;
 
             this.options.plugins = [
                 this.tooltipPlugin({x:10, y:10})
             ];
-            console.log('this.opts.series', this.options.series);
-            this._details = [[...Array(value?.data?.length).keys()], ...out];
-            console.log('FORMATTED:this._details => ', this._details);
-            this.makeChart(this._details);
+            this.makeChart(this._data);
         } catch (e) {}
     }
-    get data(): any {
-        return this._details;
+    get data(): Details {
+        return this._data;
     }
 
     @ViewChild('chartUPlot', { static: true }) chartUPlot: any | HTMLElement;
     constructor() {
-        console.log(this.data);
     }
 
     randColor() {
@@ -160,7 +179,7 @@ export class NgxUplotComponent implements AfterViewInit {
         } else {
             return;
         }
-
+        this.setParams();
         this.chartUPlot.nativeElement.innerHTML = '';
 
         const opts = this.options;
@@ -168,6 +187,11 @@ export class NgxUplotComponent implements AfterViewInit {
         opts.height = this.chartUPlot.nativeElement.clientHeight || 600;
 
         this.uPlotChart = new uPlot(opts, data, this.chartUPlot.nativeElement);
+        if (this.limits && Object.keys(this.limits).length > 0) {
+            if(this.uPlotChart) {
+                this.uPlotChart.setScale('y', this.limits)
+            }
+        }
     }
 
     __hostWidth = 0;
@@ -185,6 +209,38 @@ export class NgxUplotComponent implements AfterViewInit {
     ngAfterViewInit() {
         this.makeChart(this.data);
         this.updateChecker();
+    }
+    setParams() {
+        if (this.type) {
+            this.options.series.forEach((series: any, index: number) => {
+                if (typeof this.type === 'string') {
+                    series.paths = this.getTypeFunction(this.type);
+                } else {
+                    series.paths = this.getTypeFunction(this.type[index], index);
+                }
+            });
+        }
+        if (this.options.legend) {
+            this.options.legend.show = this.legend;
+        }else {
+            this.options.legend = {show: this.legend};
+        }
+        if (this.cursor && Object.keys(this.cursor).length > 0) {
+            if (this.options.cursor) {
+                this.options.cursor = Object.assign(this.options.cursor, this.cursor);
+            } else {
+                this.options.cursor = this.cursor;
+            }
+        }
+        if (this.dateFormat) {
+            if (this.options?.axes?.[0]) {
+                this.options.axes[0].values = this.dateFormat;
+            } else {
+                this.options.axes?.push({
+                    values: this.dateFormat
+                })
+            }
+        }
     }
     getTypeFunction(type: ChartType, index: number = 0) {
         const align =
@@ -213,8 +269,6 @@ export class NgxUplotComponent implements AfterViewInit {
 
         let seriesIdx: any  = null;
         let dataIdx: any  = null;
-
-        const fmtDate = uPlot.fmtDate("{M}/{D}/{YY} {h}:{mm}:{ss} {AA}");
 
         let over: any;
 
@@ -250,12 +304,16 @@ export class NgxUplotComponent implements AfterViewInit {
             } else {
                 let top = u.valToPos(u.data[seriesIdx][dataIdx] as any, 'y');
                 let lft = u.valToPos(u.data[        0][dataIdx], 'x');
-
                 tooltip.style.top  = (tooltipTopOffset  + top + shiftX) + "px";
-                tooltip.style.left = (tooltipLeftOffset + lft + shiftY) + "px";
+                const width = this.uPlotChart.bbox.width
+                if (lft > width*0.75) {
+                    tooltip.style.right = (tooltipLeftOffset + width - lft + shiftY) + "px";
+                } else {
+                    tooltip.style.left = (tooltipLeftOffset + lft + shiftY) + "px";
 
+                }
                 tooltip.textContent = (
-                    fmtDate(new Date(u.data[0][dataIdx] * 1e3)) + " - " + +
+                    u.data[0][dataIdx] + " - " + +
                     uPlot.fmtNum(u.data[seriesIdx][dataIdx])
                 );
             }
@@ -289,7 +347,6 @@ export class NgxUplotComponent implements AfterViewInit {
                 ],
                 setSeries: [
                     (u:_uPlot, sidx: any) => {
-                        console.log('test')
                         if (seriesIdx != sidx) {
                             seriesIdx = sidx;
 

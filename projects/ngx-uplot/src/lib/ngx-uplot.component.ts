@@ -308,8 +308,10 @@ export class NgxUplotComponent implements AfterViewInit {
                 const width = this.uPlotChart.bbox.width
                 if (lft > width*0.75) {
                     tooltip.style.right = (tooltipLeftOffset + width - lft + shiftY) + "px";
+                    tooltip.style.left = 'unset';       
                 } else {
                     tooltip.style.left = (tooltipLeftOffset + lft + shiftY) + "px";
+                    tooltip.style.right = 'unset';       
 
                 }
                 tooltip.textContent = (

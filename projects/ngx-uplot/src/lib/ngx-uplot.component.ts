@@ -71,7 +71,7 @@ export class NgxUplotComponent implements AfterViewInit {
     get options(): _uPlot.Options {
         return this._options;
     }
-    _dateFormat: string = '{H}:{m}:{ss}'
+    _dateFormat: string = '{HH}:{mm}:{ss}'
     @Input() set dateFormat(val: string) {
         this._dateFormat = val;
         this.makeChart(this.data)
